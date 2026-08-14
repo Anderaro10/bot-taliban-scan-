@@ -1,5 +1,12 @@
 const http = require('http');
-http.createServer((req, res) => res.end('Bot Online!')).listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 10000;
+
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('TALIBAN SCAN Online!');
+}).listen(PORT, '0.0.0.0', () => {
+    console.log(`🌐 Servidor Web escuchando correctamente en el puerto ${PORT}`);
+});
 
 const {
   Client,
