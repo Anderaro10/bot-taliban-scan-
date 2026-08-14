@@ -29,7 +29,7 @@ const client = new Client({
     ]
 });
 
-const TOKEN = process.env.DISCORD_TOKEN || 'MTUzNzUyOTAwMjIzMzY5NjI3Nw.Gh315z.OhCoo5etbZ14nC3rlZzEp8B8ILPOC3jJH2TqkI'
+const TOKEN = process.env.DISCORD_TOKEN || 'MTUzNzUyOTAwMjIzMzY5NjI3Nw.Gh315z.OhCoo5etbZ14nC3rlZzEp8B8ILPOC3jJH2TqkI
 ';
 
 // ID DEL ROL AUTORIZADO (ROL DE VERIFICACIÓN / TALIBAN)
