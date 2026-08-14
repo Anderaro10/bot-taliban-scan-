@@ -4,18 +4,20 @@ http.createServer((req, res) => res.end('Bot Online!')).listen(process.env.PORT 
 const {
   Client,
   GatewayIntentBits,
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    StringSelectMenuBuilder,
-    AttachmentBuilder,
-    SlashCommandBuilder,
-    REST,
-    Routes,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  AttachmentBuilder,
+  SlashCommandBuilder,
+  REST,
+  Routes,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  PermissionFlagsBits,
+  ChannelType
 } = require('discord.js');
 
 const ms = require('ms');
@@ -29,8 +31,8 @@ const client = new Client({
     ]
 });
 
-const TOKEN = process.env.DISCORD_TOKEN || 'MTUzNzUyOTAwMjIzMzY5NjI3Nw.Gh315z.OhCoo5etbZ14nC3rlZzEp8B8ILPOC3jJH2TqkI
-';
+// TOKEN OBTENIDO DESDE LAS VARIABLES DE ENTORNO DE RENDER
+const TOKEN = process.env.MTUzNzUyOTAwMjIzMzY5NjI3Nw.Gh315z.OhCoo5etbZ14nC3rlZzEp8B8ILPOC3jJH2TqkI;
 
 // ID DEL ROL AUTORIZADO (ROL DE VERIFICACIÓN / TALIBAN)
 const ROL_VERIFICADO_ID = '1537598951904251954';
@@ -98,7 +100,7 @@ client.on('guildMemberAdd', async member => {
 // BOT ONLINE Y REGISTRO DE COMANDOS
 // ======================================================
 
-client.once('clientReady', async () => {
+client.once('ready', async () => {
     console.log(`✅ ${client.user.tag} conectado correctamente.`);
 
     client.user.setPresence({
@@ -197,7 +199,6 @@ client.on('messageCreate', async message => {
         const member = message.member;
         const channel = message.channel;
 
-        // 1. Validar por la ID EXACTA DEL ROL (1537598951904251954)
         const tieneRolAutorizado = member.roles.cache.has(ROL_VERIFICADO_ID);
 
         if (!tieneRolAutorizado) {
@@ -205,7 +206,6 @@ client.on('messageCreate', async message => {
                 .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
 
-        // 2. Validar si el ticket está dentro de una categoría que contenga "COMPRAS" o "COMPRA"
         const nombreCategoria = channel.parent ? channel.parent.name.toUpperCase() : '';
         const esTicketCompras = nombreCategoria.includes('COMPRAS') || nombreCategoria.includes('COMPRA');
 
@@ -263,7 +263,6 @@ client.on('messageCreate', async message => {
 
 client.on('interactionCreate', async interaction => {
 
-    // --- MANEJO DE FORMULARIO EMERGENTE (MODAL) DE FEEDBACK ---
     if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('feedback_modal_')) {
             const parts = interaction.customId.split('_');
@@ -298,7 +297,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- MANEJO DE COMANDOS /ticket ---
     if (interaction.isChatInputCommand() && interaction.commandName === 'ticket') {
         if (!esStaffOAdmin(interaction.member)) {
             return interaction.reply({ content: '❌ Solo el Staff / Administradores pueden gestionar los tickets.', ephemeral: true });
@@ -379,7 +377,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- COMANDO: /setup-rol ---
     if (interaction.commandName === 'setup-rol') {
         const btnVerificar = new ButtonBuilder()
             .setCustomId('verificar')
@@ -666,344 +663,30 @@ client.on('interactionCreate', async interaction => {
 
             const embedTerms = new EmbedBuilder()
                 .setColor(0xE74C3C)
-                .setTitle('📜 TALIBAN SCAN | TÉRMINOS Y CONDICIONES')
+                .setTitle('📜 TALIBAN SCAN | TÉRMINOS Y CONDICIONES DE SERVICIO')
                 .setDescription(
-                    'Al adquirir, descargar o hacer uso de las licencias y servicios de **TALIBAN SCAN**, aceptas de manera incondicional los siguientes Términos y Condiciones del Servicio:\n\n' +
-                    '📌 **1. ACEPTACIÓN DE LICENCIAS Y PRODUCTO**\n' +
-                    '• Toda compra otorga una licencia de uso personal, no transferible e individual.\n' +
-                    '• Queda totalmente prohibida la reventa, distribución o intento de ingeniería inversa del software.\n\n' +
-                    '💸 **2. POLÍTICA DE REEMBOLSOS Y DEVOLUCIONES**\n' +
-                    '• Debido a la naturaleza digital de nuestros productos, **NO** se realizan reembolsos de ningún tipo bajo ninguna circunstancia una vez entregada la clave de producto.\n' +
-                    '• Todas las ventas son finales.\n\n' +
-                    '🛡️ **3. NORMAS Y USO RESPONSABLE**\n' +
-                    '• El comprador es 100% responsable del uso que le dé al scanner en sus servidores o entorno de ejecución.\n' +
-                    '• Queda totalmente prohibido el uso del software para actividades malintencionadas fuera de los términos previstos.\n\n' +
-                    '🔒 **4. DERECHO DE ADMISIÓN Y SANCIONES**\n' +
-                    '• Nos reservamos el derecho de revocar cualquier licencia o bloquear el acceso a un usuario sin reembolso si se detectan faltas de respeto al Staff, intentos de estafa o vulneración de seguridad.\n\n' +
-                    '⚠️ **5. MODIFICACIONES Y ACTUALIZACIONES**\n' +
-                    '• Nos reservamos el derecho de modificar o actualizar las licencias, características técnicas o términos en cualquier momento según las necesidades del servicio.'
+                    'Al adquirir y utilizar cualquier producto o servicio de **TALIBAN SCAN**, aceptas automáticamente los siguientes términos:\n\n' +
+                    '1. **POLÍTICA DE REEMBOLSOS:**\n' +
+                    'Todas las compras son finales. No se realizarán reembolsos bajo ninguna circunstancia una vez entregada la licencia.\n\n' +
+                    '2. **PROHIBICIÓN DE REVENTA:**\n' +
+                    'Queda estrictamente prohibida la reventa, compartición o transferencia de licencias a terceros.\n\n' +
+                    '3. **USO DE HERRAMIENTAS:**\n' +
+                    'El usuario es el único responsable del uso que le dé a las herramientas proporcionadas.\n\n' +
+                    '4. **SANCIONES:**\n' +
+                    'Cualquier intento de fraude o filtración causará la revocación inmediata de la licencia y el baneo permanente.'
                 )
                 .setImage(URL_BANNER)
-                .setThumbnail(URL_LOGO)
-                .setFooter({ 
-                    text: 'TALIBAN SCAN • Garantía y Términos Legales', 
-                    iconURL: guild.iconURL({ dynamic: true }) || undefined 
-                });
+                .setFooter({ text: 'TALIBAN SCAN • Todos los derechos reservados' });
 
             await canalTerms.send({ embeds: [embedTerms] });
-            await interaction.editReply({ content: `✅ Canal ${canalTerms} creado y términos publicados correctamente.` });
+            await interaction.editReply({ content: `✅ Canal de Términos configurado: ${canalTerms}` });
 
         } catch (e) {
             console.error(e);
-            await interaction.editReply({ content: '❌ Error al configurar el canal de términos.' });
+            await interaction.editReply({ content: '❌ Error al configurar el canal de Términos.' });
         }
     }
 });
 
-// ======================================================
-// MANEJO DE TICKETS, VERIFICACIÓN Y BOTONES
-// ======================================================
-
-client.on('interactionCreate', async interaction => {
-
-    // --- MENÚ DESPLEGABLE DE TICKETS ---
-    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_categoria') {
-        const categoriaSeleccionada = interaction.values[0];
-        const guild = interaction.guild;
-        const user = interaction.user;
-
-        await interaction.deferReply({ ephemeral: true });
-
-        try {
-            const nombreCanal = `ticket-${user.username.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-            const canalExistente = guild.channels.cache.find(c => c.name === nombreCanal);
-            if (canalExistente) {
-                return await interaction.editReply({ content: `⚠️ Ya tienes un ticket abierto en ${canalExistente}.` });
-            }
-
-            let nombreCategoriaTarget = '📂 TICKETS ABIERTOS';
-            if (categoriaSeleccionada === 'ayuda') nombreCategoriaTarget = 'TICKETS GENERALES';
-            if (categoriaSeleccionada === 'reporte') nombreCategoriaTarget = 'TICKETS REPORTES';
-            if (categoriaSeleccionada === 'leaks') nombreCategoriaTarget = 'TICKETS LEAKS';
-            if (categoriaSeleccionada === 'tienda') nombreCategoriaTarget = 'TICKETS COMPRAS';
-
-            let catDestino = guild.channels.cache.find(c => c.name.toLowerCase().includes(nombreCategoriaTarget.toLowerCase()) && c.type === ChannelType.GuildCategory);
-            if (!catDestino) {
-                catDestino = await guild.channels.create({ name: nombreCategoriaTarget, type: ChannelType.GuildCategory });
-            }
-
-            const rolSoporte = guild.roles.cache.find(r => r.name.toLowerCase() === ROLES_STAFF.soporte.toLowerCase());
-
-            const permissionOverwrites = [
-                {
-                    id: guild.roles.everyone.id,
-                    deny: [PermissionFlagsBits.ViewChannel]
-                },
-                {
-                    id: user.id,
-                    allow: [
-                        PermissionFlagsBits.ViewChannel,
-                        PermissionFlagsBits.SendMessages,
-                        PermissionFlagsBits.AttachFiles,
-                        PermissionFlagsBits.ReadMessageHistory
-                    ]
-                }
-            ];
-
-            if (rolSoporte) {
-                permissionOverwrites.push({
-                    id: rolSoporte.id,
-                    allow: [
-                        PermissionFlagsBits.ViewChannel,
-                        PermissionFlagsBits.SendMessages,
-                        PermissionFlagsBits.AttachFiles,
-                        PermissionFlagsBits.ReadMessageHistory
-                    ]
-                });
-            }
-
-            const ticketChannel = await guild.channels.create({
-                name: `ticket-${user.username}`,
-                type: ChannelType.GuildText,
-                parent: catDestino.id,
-                permissionOverwrites: permissionOverwrites
-            });
-
-            const embedBienvenidaTicket = new EmbedBuilder()
-                .setColor(0xED4245)
-                .setTitle(`🎫 TICKET DE SOPORTE | Categoría: ${categoriaSeleccionada.toUpperCase()}`)
-                .setDescription(`Hola ${user}, bienvenido/a a tu ticket de soporte.\nUn miembro del equipo te atenderá pronto.\n\nPor favor, describe tu consulta o problema con detalle.`)
-                .setFooter({ text: 'TALIBAN SCAN • Sistema de Tickets', iconURL: URL_LOGO });
-
-            const rowBotonesTicket = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('cerrar_ticket').setLabel('Cerrar Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('reclamar_ticket').setLabel('Reclamar Ticket').setEmoji('✋').setStyle(ButtonStyle.Primary)
-            );
-
-            await ticketChannel.send({
-                content: `${user} | ${rolSoporte ? rolSoporte : '@Staff'}`,
-                embeds: [embedBienvenidaTicket],
-                components: [rowBotonesTicket]
-            });
-
-            await interaction.editReply({ content: `✅ Ticket creado correctamente en su categoría correspondiente: ${ticketChannel}` });
-
-        } catch (error) {
-            console.error('Error al crear el ticket:', error);
-            await interaction.editReply({ content: '❌ Ocurrió un error al crear el ticket. Asegúrate de que mi BOT tenga el permiso **Gestionar Canales** y esté posicionado arriba en Roles.' });
-        }
-    }
-
-    if (!interaction.isButton()) return;
-
-    // --- RECLAMAR TICKET ---
-    if (interaction.customId === 'reclamar_ticket') {
-        if (!esStaffOAdmin(interaction.member)) {
-            return await interaction.reply({ content: '❌ Solo los Administradores o miembros del Staff pueden reclamar tickets.', ephemeral: true });
-        }
-
-        const embedReclamado = new EmbedBuilder()
-            .setColor(0x57F287)
-            .setDescription(`✋ Este ticket ha sido reclamado por ${interaction.member}. Te atenderá personalmente.`);
-
-        await interaction.channel.send({ embeds: [embedReclamado] });
-        return await interaction.reply({ content: 'Has reclamado este ticket.', ephemeral: true });
-    }
-
-    // --- CERRAR TICKET VIA BOTÓN ---
-    if (interaction.customId === 'cerrar_ticket') {
-        if (!esStaffOAdmin(interaction.member)) {
-            return await interaction.reply({ content: '❌ Solo los Administradores o el Staff pueden cerrar tickets.', ephemeral: true });
-        }
-
-        await interaction.reply({ content: '🔒 Guardando conversación y cerrando ticket en 5 segundos...' });
-
-        const canal = interaction.channel;
-        const guild = interaction.guild;
-
-        const mensajes = await canal.messages.fetch({ limit: 100 });
-        let transcripcionTexto = `--- TRANSCRIPCIÓN DEL TICKET: ${canal.name} ---\n\n`;
-        
-        mensajes.reverse().forEach(m => {
-            transcripcionTexto += `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}\n`;
-        });
-
-        const buffer = Buffer.from(transcripcionTexto, 'utf-8');
-        const attachment = new AttachmentBuilder(buffer, { name: `transcript-${canal.name}.txt` });
-
-        const canalTranscripts = guild.channels.cache.get(CANAL_TRANSCRIPTS_ID);
-        if (canalTranscripts) {
-            const embedLogTranscript = new EmbedBuilder()
-                .setColor(0xED4245)
-                .setTitle('📝 Ticket Cerrado')
-                .addFields(
-                    { name: 'Canal', value: canal.name, inline: true },
-                    { name: 'Cerrado por', value: interaction.user.tag, inline: true }
-                )
-                .setTimestamp();
-
-            await canalTranscripts.send({ embeds: [embedLogTranscript], files: [attachment] });
-        }
-
-        setTimeout(async () => {
-            await canal.delete().catch(() => {});
-        }, 5000);
-        return;
-    }
-
-    // --- DESPLIEGUE DEL MODAL AL PULSAR BOTÓN DE ESTRELLAS ---
-    if (interaction.customId.startsWith('star_')) {
-        const parts = interaction.customId.split('_');
-        const estrellas = parts[1];
-        const staffId = parts[2];
-
-        // Crear ventana emergente (Modal)
-        const modal = new ModalBuilder()
-            .setCustomId(`feedback_modal_${estrellas}_${staffId}`)
-            .setTitle(`Valoración de ${estrellas} ⭐`);
-
-        const opinionInput = new TextInputBuilder()
-            .setCustomId('opinion_input')
-            .setLabel('¿Cuál es tu opinión sobre el soporte?')
-            .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder('Escribe aquí tus comentarios, sugerencias o agradecimiento...')
-            .setRequired(true)
-            .setMaxLength(1000);
-
-        const firstActionRow = new ActionRowBuilder().addComponents(opinionInput);
-        modal.addComponents(firstActionRow);
-
-        // Mostrar formulario al usuario
-        await interaction.showModal(modal);
-
-        // Borrar el mensaje de valoración original tras presionar el botón
-        await interaction.message.delete().catch(() => {});
-        return;
-    }
-
-    // --- BOTÓN DE VERIFICACIÓN ---
-    if (interaction.customId === 'verificar') {
-        await interaction.deferReply({ ephemeral: true });
-
-        const guild = interaction.guild;
-        const rolExacto = guild.roles.cache.get(ROL_VERIFICADO_ID);
-
-        if (!rolExacto) {
-            return interaction.editReply({
-                content: '❌ No se encontró el rol de verificación con el ID especificado en este servidor.'
-            });
-        }
-
-        if (interaction.member.roles.cache.has(ROL_VERIFICADO_ID)) {
-            return interaction.editReply({
-                content: `✅ Ya estás verificado/a y tienes asignado el rol <@&${ROL_VERIFICADO_ID}>.`
-            });
-        }
-
-        try {
-            await interaction.member.roles.add(rolExacto);
-            return interaction.editReply({
-                content: `✅ ¡Te has verificado con éxito en **TALIBAN SCAN**! Se te ha asignado el rol <@&${ROL_VERIFICADO_ID}>.`
-            });
-        } catch (err) {
-            console.error(err);
-            return interaction.editReply({
-                content: '❌ No se pudo asignar el rol. Asegúrate en Ajustes del Servidor > Roles que el rol de mi BOT esté situado **POR ENCIMA** del rol que intento asignar.'
-            });
-        }
-    }
-
-    // --- PARTICIPACIÓN EN SORTEOS ---
-    if (interaction.customId === 'join_giveaway') {
-        const giveawayData = giveawaysMap.get(interaction.message.id);
-
-        if (!giveawayData) {
-            return interaction.reply({ content: '❌ Este sorteo ya ha finalizado o no está disponible.', ephemeral: true });
-        }
-
-        const userId = interaction.user.id;
-
-        if (giveawayData.participantes.has(userId)) {
-            giveawayData.participantes.delete(userId);
-            await interaction.reply({ content: '❌ Has salido del sorteo.', ephemeral: true });
-        } else {
-            giveawayData.participantes.add(userId);
-            await interaction.reply({ content: '🎉 ¡Has entrado al sorteo con éxito!', ephemeral: true });
-        }
-
-        const embedOriginal = interaction.message.embeds[0];
-        const updatedEmbed = EmbedBuilder.from(embedOriginal).setDescription(
-            (giveawayData.descripcion ? `${giveawayData.descripcion}\n\n` : '') +
-            `Ends: <t:${giveawayData.tiempoFin}:R> (<t:${giveawayData.tiempoFin}:f>)\n` +
-            `Hosted by: ${giveawayData.host}\n` +
-            `Entries: **${giveawayData.participantes.size}**\n` +
-            `Winners: **${giveawayData.numGanadores}**`
-        );
-
-        await interaction.message.edit({ embeds: [updatedEmbed] });
-    }
-});
-
-// ======================================================
-// LÓGICA PARA FINALIZAR SORTEOS
-// ======================================================
-
-async function finalizarSorteo(messageId, guild) {
-    const data = giveawaysMap.get(messageId);
-    if (!data) return;
-
-    try {
-        const canal = guild.channels.cache.get(data.canalId);
-        if (!canal) return;
-
-        const mensaje = await canal.messages.fetch(messageId).catch(() => null);
-        if (!mensaje) return;
-
-        const arrayParticipantes = Array.from(data.participantes);
-        let ganadoresMencion = [];
-
-        if (arrayParticipantes.length === 0) {
-            ganadoresMencion = ['No hay suficientes participantes.'];
-        } else {
-            for (let i = arrayParticipantes.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arrayParticipantes[i], arrayParticipantes[j]] = [arrayParticipantes[j], arrayParticipantes[i]];
-            }
-
-            const ganadoresIds = arrayParticipantes.slice(0, Math.min(data.numGanadores, arrayParticipantes.length));
-            ganadoresMencion = ganadoresIds.map(id => `<@${id}>`);
-        }
-
-        const tiempoAhora = Math.floor(Date.now() / 1000);
-
-        const embedFinal = new EmbedBuilder()
-            .setColor(0x111214)
-            .setTitle(data.premio)
-            .setDescription(
-                (data.descripcion ? `${data.descripcion}\n\n` : '') +
-                `Ended: <t:${tiempoAhora}:R> (<t:${tiempoAhora}:f>)\n` +
-                `Hosted by: ${data.host}\n` +
-                `Winners: ${ganadoresMencion.join(', ')}`
-            )
-            .setFooter({ text: 'Sorteo Finalizado' });
-
-        await mensaje.edit({ embeds: [embedFinal], components: [] });
-
-        if (arrayParticipantes.length > 0) {
-            await canal.send({ content: `🎉 ¡Felicidades ${ganadoresMencion.join(', ')}! Has ganado **${data.premio}**.` });
-        } else {
-            await canal.send({ content: `❌ El sorteo de **${data.premio}** finalizó sin ganadores debido a la falta de participantes.` });
-        }
-
-        giveawaysMap.delete(messageId);
-
-    } catch (e) {
-        console.error('Error al finalizar el sorteo:', e);
-    }
-}
-
-// ======================================================
 // LOGIN DEL BOT
-// ======================================================
-
 client.login(TOKEN);
