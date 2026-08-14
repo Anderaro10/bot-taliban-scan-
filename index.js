@@ -1,7 +1,7 @@
 const http = require('http');
 const PORT = process.env.PORT || 10000;
 
-// Servidor Web para mantener Render activo sin congelar el proceso
+// Servidor Web HTTP obligatorio para que Render no cancele el deploy y mantenga el bot 24/7 activo
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('TALIBAN SCAN Online!');
@@ -68,6 +68,59 @@ function esStaffOAdmin(member) {
 
     const rolesStaff = ['OWNER', 'CO OWNER', ROLES_STAFF.soporte.toUpperCase(), ROLES_STAFF.moderador.toUpperCase(), ROLES_STAFF.administrador.toUpperCase()];
     return member.roles.cache.some(r => rolesStaff.includes(r.name.toUpperCase().trim()));
+}
+
+// Función auxiliar para finalizar sorteos
+async function finalizarSorteo(msgId, guild) {
+    const data = giveawaysMap.get(msgId);
+    if (!data) return;
+
+    const canal = guild.channels.cache.get(data.canalId);
+    if (!canal) return;
+
+    try {
+        const msg = await canal.messages.fetch(msgId);
+        const participantes = Array.from(data.participantes);
+
+        if (participantes.length === 0) {
+            const embedNoWin = new EmbedBuilder()
+                .setColor(0xED4245)
+                .setTitle(data.premio)
+                .setDescription(`Sorteo finalizado.\n**Ganadores:** No hubo participantes suficientes.`)
+                .setFooter({ text: 'TALIBAN SCAN • Sorteos' });
+
+            await msg.edit({ embeds: [embedNoWin], components: [] });
+            giveawaysMap.delete(msgId);
+            return;
+        }
+
+        const ganadores = [];
+        const numGanadores = Math.min(data.numGanadores, participantes.length);
+
+        for (let i = 0; i < numGanadores; i++) {
+            const idx = Math.floor(Math.random() * participantes.length);
+            ganadores.push(participantes.splice(idx, 1)[0]);
+        }
+
+        const mencionesGanadores = ganadores.map(id => `<@${id}>`).join(', ');
+
+        const embedEnd = new EmbedBuilder()
+            .setColor(0x57F287)
+            .setTitle(`🎉 ${data.premio}`)
+            .setDescription(
+                `**Sorteo Finalizado**\n\n` +
+                `🏆 **Ganador(es):** ${mencionesGanadores}\n` +
+                `👤 **Creado por:** ${data.host}`
+            )
+            .setFooter({ text: 'TALIBAN SCAN • Sorteos' });
+
+        await msg.edit({ embeds: [embedEnd], components: [] });
+        await canal.send(`🎉 ¡Felicidades ${mencionesGanadores}! Has ganado **${data.premio}**.`);
+    } catch (err) {
+        console.error('Error al finalizar el sorteo:', err);
+    } finally {
+        giveawaysMap.delete(msgId);
+    }
 }
 
 // ======================================================
@@ -271,6 +324,64 @@ client.on('messageCreate', async message => {
 
 client.on('interactionCreate', async interaction => {
 
+    // MANEJO DE BOTONES Y MODALES
+    if (interaction.isButton()) {
+        if (interaction.customId === 'verificar') {
+            const rol = interaction.guild.roles.cache.get(ROL_VERIFICADO_ID);
+            if (!rol) return interaction.reply({ content: '❌ El rol de verificación no existe en el servidor.', ephemeral: true });
+
+            if (interaction.member.roles.cache.has(ROL_VERIFICADO_ID)) {
+                return interaction.reply({ content: '⚠️ Ya estás verificado.', ephemeral: true });
+            }
+
+            await interaction.member.roles.add(rol);
+            return interaction.reply({ content: '✅ ¡Te has verificado correctamente!', ephemeral: true });
+        }
+
+        if (interaction.customId.startsWith('star_')) {
+            const [, estrellas, staffId] = interaction.customId.split('_');
+
+            const modal = new ModalBuilder()
+                .setCustomId(`feedback_modal_${estrellas}_${staffId}`)
+                .setTitle(`Valoración de ${estrellas} ⭐`);
+
+            const opinionInput = new TextInputBuilder()
+                .setCustomId('opinion_input')
+                .setLabel('¿Qué te ha parecido la atención?')
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder('Escribe tu opinión aquí (opcional)...')
+                .setRequired(false);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(opinionInput));
+            return await interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'join_giveaway') {
+            const data = giveawaysMap.get(interaction.message.id);
+            if (!data) return interaction.reply({ content: '❌ Este sorteo ya no está activo.', ephemeral: true });
+
+            if (data.participantes.has(interaction.user.id)) {
+                data.participantes.delete(interaction.user.id);
+                interaction.reply({ content: '❌ Has salido del sorteo.', ephemeral: true });
+            } else {
+                data.participantes.add(interaction.user.id);
+                interaction.reply({ content: '🎉 ¡Has entrado al sorteo!', ephemeral: true });
+            }
+
+            const embedEdit = EmbedBuilder.from(interaction.message.embeds[0])
+                .setDescription(
+                    (data.descripcion ? `${data.descripcion}\n\n` : '') +
+                    `Ends: <t:${data.tiempoFin}:R> (<t:${data.tiempoFin}:f>)\n` +
+                    `Hosted by: ${data.host}\n` +
+                    `Entries: **${data.participantes.size}**\n` +
+                    `Winners: **${data.numGanadores}**`
+                );
+
+            await interaction.message.edit({ embeds: [embedEdit] });
+            return;
+        }
+    }
+
     if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('feedback_modal_')) {
             const parts = interaction.customId.split('_');
@@ -303,6 +414,42 @@ client.on('interactionCreate', async interaction => {
                 ephemeral: true 
             });
         }
+    }
+
+    // MANEJO DEL MENÚ DESPLEGABLE DE TICKETS
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_categoria') {
+        const opcion = interaction.values[0];
+        const guild = interaction.guild;
+        const user = interaction.user;
+
+        let nombreCat = 'COMPRAS';
+        if (opcion === 'ayuda') nombreCat = 'SOPORTE';
+        if (opcion === 'reporte') nombreCat = 'REPORTES';
+        if (opcion === 'leaks') nombreCat = 'LEAKS';
+
+        let catTarget = guild.channels.cache.find(c => c.name.toUpperCase().includes(nombreCat) && c.type === ChannelType.GuildCategory);
+        if (!catTarget) {
+            catTarget = await guild.channels.create({ name: `🎫 TICKETS ${nombreCat}`, type: ChannelType.GuildCategory });
+        }
+
+        const canalTicket = await guild.channels.create({
+            name: `ticket-${user.username}`,
+            type: ChannelType.GuildText,
+            parent: catTarget.id,
+            permissionOverwrites: [
+                { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ReadMessageHistory] }
+            ]
+        });
+
+        const embedNuevoTicket = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setTitle(`🎫 Ticket de ${opcion.toUpperCase()}`)
+            .setDescription(`Hola ${user}, un miembro del staff te atenderá en breve. Por favor explica tu consulta detalladamente.`)
+            .setFooter({ text: 'TALIBAN SCAN • Sistema de Tickets' });
+
+        await canalTicket.send({ content: `${user}`, embeds: [embedNuevoTicket] });
+        return interaction.reply({ content: `✅ Ticket creado correctamente: ${canalTicket}`, ephemeral: true });
     }
 
     if (interaction.isChatInputCommand() && interaction.commandName === 'ticket') {
@@ -677,7 +824,7 @@ client.on('interactionCreate', async interaction => {
                     '1. **POLÍTICA DE REEMBOLSOS:**\n' +
                     'Todas las compras son finales. No se realizarán reembolsos bajo ninguna circunstancia una vez entregada la licencia.\n\n' +
                     '2. **PROHIBICIÓN DE REVENTA:**\n' +
-                    'Queda strictly prohibida la reventa, compartición o transferencia de licencias a terceros.\n\n' +
+                    'Queda estrictamente prohibida la reventa, compartición o transferencia de licencias a terceros.\n\n' +
                     '3. **USO DE HERRAMIENTAS:**\n' +
                     'El usuario es el único responsable del uso que le dé a las herramientas proporcionadas.\n\n' +
                     '4. **SANCIONES:**\n' +
