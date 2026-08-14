@@ -1,6 +1,7 @@
 const http = require('http');
 const PORT = process.env.PORT || 10000;
 
+// Servidor Web para mantener Render activo sin congelar el proceso
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('TALIBAN SCAN Online!');
@@ -676,7 +677,7 @@ client.on('interactionCreate', async interaction => {
                     '1. **POLÍTICA DE REEMBOLSOS:**\n' +
                     'Todas las compras son finales. No se realizarán reembolsos bajo ninguna circunstancia una vez entregada la licencia.\n\n' +
                     '2. **PROHIBICIÓN DE REVENTA:**\n' +
-                    'Queda estrictamente prohibida la reventa, compartición o transferencia de licencias a terceros.\n\n' +
+                    'Queda strictly prohibida la reventa, compartición o transferencia de licencias a terceros.\n\n' +
                     '3. **USO DE HERRAMIENTAS:**\n' +
                     'El usuario es el único responsable del uso que le dé a las herramientas proporcionadas.\n\n' +
                     '4. **SANCIONES:**\n' +
