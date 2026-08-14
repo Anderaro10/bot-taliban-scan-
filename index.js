@@ -1,8 +1,9 @@
+const http = require('http');
+http.createServer((req, res) => res.end('Bot Online!')).listen(process.env.PORT || 3000);
+
 const {
-    Client,
-    GatewayIntentBits,
-    ChannelType,
-    PermissionFlagsBits,
+  Client,
+  GatewayIntentBits,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
@@ -28,7 +29,8 @@ const client = new Client({
     ]
 });
 
-const TOKEN = process.env.DISCORD_TOKEN || 'MTUzNzUyOTAwMjIzMzY5NjI3Nw.G_IOfv.ozANLheXKkV2fAPZEvuMuD0i2kR6aAhecPdHgA';
+const TOKEN = process.env.DISCORD_TOKEN || 'MTUzNzUyOTAwMjIzMzY5NjI3Nw.Gh315z.OhCoo5etbZ14nC3rlZzEp8B8ILPOC3jJH2TqkI'
+';
 
 // ID DEL ROL AUTORIZADO (ROL DE VERIFICACIÓN / TALIBAN)
 const ROL_VERIFICADO_ID = '1537598951904251954';
